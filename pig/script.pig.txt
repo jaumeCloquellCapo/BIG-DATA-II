@@ -1,0 +1,43 @@
+measure = load 'crimes/Crimes_-_2001_to_present.csv' using PigStorage(',') as (
+   id, 
+   case_number,
+   fecha,
+   block,
+   iucr,
+   primary_type,
+   description,
+   location_description,
+   arrest,
+   domestic,
+   beat,
+   district,
+   ward,
+   community_area,
+   fbi_code,
+   x_coordinate,
+   y_coordinate,
+   year,
+   updated_on,
+   latitude,
+   longitude
+);
+
+types = DISTINCT(FOREACH measure GENERATE primary_type); 
+
+groups = Group measure by primary_type;
+count = foreach groups GENERATE $0, COUNT($1) as count;
+count_ordered = ORDER count BY count DESC;
+dump count_ordered;
+
+groups = Group measure by year;
+count = foreach groups GENERATE $0, COUNT($1) as count;
+count_ordered = ORDER count BY count DESC;
+dump count_ordered;
+
+filter_by_age = filter measure by (int)year >=2001 and (int)year <= 2019;
+filter_by_group = filter filter_by_age by (chararray)primary_type == 'THEFT' or (chararray)primary_type == 'BATTERY';
+groups = Group filter_by_group by primary_type;
+count = foreach groups GENERATE $0, COUNT($1) as count;
+count_ordered = ORDER count BY count DESC;
+dump count_ordered;
+store count_ordered into pigResults/CrimesProcessed' using PigStorage(',');
