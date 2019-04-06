@@ -1,7 +1,7 @@
-measure = load 'crimes/Crimes_-_2001_to_present.csv' using PigStorage(',') as (
+measure = load 'input/Crimes_-_2001_to_present.csv' using PigStorage(';') as (
    id, 
    case_number,
-   fecha,
+   date,
    block,
    iucr,
    primary_type,
@@ -22,22 +22,33 @@ measure = load 'crimes/Crimes_-_2001_to_present.csv' using PigStorage(',') as (
    longitude
 );
 
-types = DISTINCT(FOREACH measure GENERATE primary_type); 
+A = DISTINCT(FOREACH measure GENERATE primary_type);
+store A into 'pigResults/A';
 
-groups = Group measure by primary_type;
-count = foreach groups GENERATE $0, COUNT($1) as count;
-count_ordered = ORDER count BY count DESC;
-dump count_ordered;
+A = Group measure by primary_type;
+B = foreach A GENERATE group, COUNT(measure) as count;
+C = ORDER B BY count DESC;
+store C into 'pigResults/B';
 
-groups = Group measure by year;
-count = foreach groups GENERATE $0, COUNT($1) as count;
-count_ordered = ORDER count BY count DESC;
-dump count_ordered;
+A = Group measure by district;
+B = foreach A GENERATE group, COUNT(measure) as count;
+C = ORDER B BY count DESC;
+store C into 'pigResults/C';
 
-filter_by_age = filter measure by (int)year >=2001 and (int)year <= 2019;
-filter_by_group = filter filter_by_age by (chararray)primary_type == 'THEFT' or (chararray)primary_type == 'BATTERY';
-groups = Group filter_by_group by primary_type;
-count = foreach groups GENERATE $0, COUNT($1) as count;
-count_ordered = ORDER count BY count DESC;
-dump count_ordered;
-store count_ordered into pigResults/CrimesProcessed' using PigStorage(',');
+A = Group measure by location_description;
+B = foreach A GENERATE group, COUNT(measure) as count;
+C = ORDER B BY count DESC;
+store C into 'pigResults/D';
+
+A = FILTER measure BY (location_description matches '(STREET|RESIDENCE|APARTMENT|SIDEWALK)');
+B = COGROUP A by (location_description, primary_type);
+C = foreach B GENERATE group, COUNT(A) as count;
+store C into 'pigResults/E';
+
+A = COGROUP measure by (district, primary_type);
+B = foreach A GENERATE group, COUNT(measure) as count;
+store C into 'pigResults/F';
+
+A = Group measure by year;
+B = foreach A GENERATE group, COUNT(measure) as count;
+store C into 'pigResults/G';
