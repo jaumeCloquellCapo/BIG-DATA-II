@@ -52,3 +52,8 @@ store C into 'pigResults/F';
 A = Group measure by year;
 B = foreach A GENERATE group, COUNT(measure) as count;
 store C into 'pigResults/G';
+
+A = foreach measure generate ToDate(date,'MM/d/yyyy h:mm:ss tt') as (dt:DateTime), *;
+B = foreach A generate GetHour(dt) as hour, *;
+C = Group B by hour;
+D = foreach C GENERATE group, COUNT($1) as count;
